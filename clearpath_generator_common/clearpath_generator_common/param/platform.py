@@ -88,7 +88,7 @@ class PlatformParam():
             # Parameter file to generate
             self.param_file = ParamFile(
                 name=self.parameter,
-                namespace=self.namespace,
+                namespace='/**',
                 path=self.param_path)
 
         def generate_parameters(self, use_sim_time: bool = False) -> None:
