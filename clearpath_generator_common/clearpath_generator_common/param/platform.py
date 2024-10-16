@@ -33,6 +33,7 @@ import os
 
 from clearpath_config.clearpath_config import ClearpathConfig
 from clearpath_config.common.types.platform import Platform
+from clearpath_config.common.utils.dictionary import merge_dict, replace_dict_items
 from clearpath_generator_common.common import Package, ParamFile
 from clearpath_generator_common.param.writer import ParamWriter
 
@@ -103,6 +104,49 @@ class PlatformParam():
 
             self.param_file.parameters = self.default_param_file.parameters
 
+            # Arm Control
+            if self.parameter == PlatformParam.CONTROL and use_sim_time:
+                for arm in self.clearpath_config.manipulators.get_all_arms():
+                    # Arm Control Parameter File
+                    arm_param_file = ParamFile(
+                        name='control',
+                        package=Package('clearpath_manipulators_description'),
+                        path='config/%s/%s' % (
+                            arm.get_manipulator_type(),
+                            arm.get_manipulator_model()),
+                        parameters={}
+                    )
+                    arm_param_file.read()
+                    updated_parameters = replace_dict_items(
+                        arm_param_file.parameters,
+                        {r'${name}': arm.name}
+                    )
+                    self.param_file.parameters = merge_dict(
+                        self.param_file.parameters, updated_parameters)
+
+            # Gripper Control
+            if self.parameter == PlatformParam.CONTROL and use_sim_time:
+                for arm in self.clearpath_config.manipulators.get_all_arms():
+                    if not arm.gripper:
+                        continue
+                    gripper = arm.gripper
+                    # Gripper Control Parameter File
+                    gripper_param_file = ParamFile(
+                        name='control',
+                        package=Package('clearpath_manipulators_description'),
+                        path='config/%s/%s' % (
+                            gripper.get_manipulator_type(),
+                            gripper.get_manipulator_model()),
+                        parameters={}
+                    )
+                    gripper_param_file.read()
+                    updated_parameters = replace_dict_items(
+                        gripper_param_file.parameters,
+                        {r'${name}': gripper.name}
+                    )
+                    self.param_file.parameters = merge_dict(
+                        self.param_file.parameters, updated_parameters)
+
             # Get extra ros parameters from config
             extras = self.clearpath_config.platform.extras.ros_parameters
             for node in extras:
@@ -153,11 +197,15 @@ class PlatformParam():
                     }
                     self.param_file.update({self.EKF_NODE: imu0_parameters})
 
+                # Count the IMU index individually so we can continue counting for GPS
+                imu_idx = 0
+
                 # Add all additional IMU's
                 imus = self.clearpath_config.sensors.get_all_imu()
                 for imu in imus:
                     if imu.launch_enabled:
-                        imu_name = imu.name.replace('_', '')
+                        imu_idx += 1
+                        imu_name = f'imu{imu_idx}'
                         imu_parameters = {
                             imu_name: f'sensors/{imu.name}/data',
                             f'{imu_name}_config': self.imu_config,
@@ -166,6 +214,21 @@ class PlatformParam():
                             f'{imu_name}_remove_gravitational_acceleration': True
                         }
                         self.param_file.update({self.EKF_NODE: imu_parameters})
+
+                # Add all GPS sensors that have IMUs
+                gpss = self.clearpath_config.sensors.get_all_gps()
+                for gps in gpss:
+                    if gps.launch_enabled and gps.has_imu():
+                        imu_idx += 1
+                        gps_name = f'imu{imu_idx}'
+                        gps_parameters = {
+                            gps_name: f'sensors/{gps.name}/imu/data',
+                            f'{gps_name}_config': self.imu_config,
+                            f'{gps_name}_differential': False,
+                            f'{gps_name}_queue_size': 10,
+                            f'{gps_name}_remove_gravitational_acceleration': True
+                        }
+                        self.param_file.update({self.EKF_NODE: gps_parameters})
 
     class TeleopJoyParam(BaseParam):
         def __init__(self,
