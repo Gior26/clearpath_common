@@ -90,7 +90,7 @@
         <link name="${name}_depth_frame"/>
 
         <joint name="${name}_depth_optical_joint" type="fixed">
-          <origin xyz="0 0 0" rpy="${-M_PI/2} 0 ${-M_PI/2}" />
+          <origin xyz="0 0 0" rpy="0 0 0" />
           <parent link="${name}_depth_frame" />
           <child link="${name}_depth_optical_frame" />
         </joint>
@@ -120,7 +120,7 @@
         <link name="${name}_infra2_frame"/>
 
         <joint name="${name}_infra2_optical_joint" type="fixed">
-          <origin xyz="0 0 0" rpy="${-M_PI/2} 0 ${-M_PI/2}" />
+          <origin xyz="0 0 0" rpy="0 0 0" />
           <parent link="${name}_infra2_frame" />
           <child link="${name}_infra2_optical_frame" />
         </joint>
@@ -135,7 +135,7 @@
         <link name="${name}_color_frame"/>
 
         <joint name="${name}_color_optical_joint" type="fixed">
-          <origin xyz="0 0 0" rpy="${-M_PI/2} 0 ${-M_PI/2}" />
+          <origin xyz="0 0 0" rpy="0 0 0" />
           <parent link="${name}_color_frame" />
           <child link="${name}_color_optical_frame" />
         </joint>
